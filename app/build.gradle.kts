@@ -9,7 +9,7 @@ android {
 
     defaultConfig {
         applicationId = "com.broadcast.customview"
-        minSdk = 21
+        minSdk = 28
         targetSdk = 30
         versionCode = 1
         versionName = "1.0"
@@ -29,6 +29,10 @@ android {
     }
     kotlinOptions {
         jvmTarget = "1.8"
+    }
+
+    buildFeatures {
+        viewBinding = true
     }
 }
 
