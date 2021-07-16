@@ -42,6 +42,11 @@ class GantView @JvmOverloads constructor(
         color = Color.WHITE
     }
 
+    // Для откусывания поолукруга от таски
+    private val cutOutPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_OUT)
+    }
+
     // Paint для
 
     // endregion
@@ -199,17 +204,20 @@ class GantView @JvmOverloads constructor(
 
     private fun Canvas.drawTasks() {
         uiTasks.forEach { uiTask ->
-            // Фигура таски
-            drawRoundRect(uiTask.rect, taskCornerRadius, taskCornerRadius, taskShapePaint)
-            // Расположение названия
-            val textX = uiTask.rect.left + taskTextHorizontalMargin
-            val textY = taskNamePaint.getTextBaselineByCenter(uiTask.rect.centerY())
+            val taskRect = uiTask.rect
             val taskName = uiTask.task.name
+            // Фигура таски
+            drawRoundRect(taskRect, taskCornerRadius, taskCornerRadius, taskShapePaint)
+            // Откусываем кусок от фигуры
+            drawCircle(taskRect.left, taskRect.centerY(), taskRect.height() / 4f, cutOutPaint)
+            // Расположение названия
+            val textX = taskRect.left + taskTextHorizontalMargin
+            val textY = taskNamePaint.getTextBaselineByCenter(taskRect.centerY())
             // Количество символов из названия, которые поместятся в фигуру
             val charsCount = taskNamePaint.breakText(
                 taskName,
                 true,
-                uiTask.rect.width() - taskTextHorizontalMargin * 2,
+                taskRect.width() - taskTextHorizontalMargin * 2,
                 null
             )
             drawText(taskName.substring(startIndex = 0, endIndex = charsCount), textX, textY, taskNamePaint)
