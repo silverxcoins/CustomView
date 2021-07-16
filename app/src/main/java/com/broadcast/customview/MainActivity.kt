@@ -15,13 +15,23 @@ class MainActivity : AppCompatActivity() {
             listOf(
                 Task(
                     name = "Task 1",
-                    dateStart = now,
-                    dateEnd = now.plusWeeks(2)
+                    dateStart = now.minusMonths(1),
+                    dateEnd = now
                 ),
                 Task(
-                    name = "Task 2",
-                    dateStart = now.plusMonths(1),
-                    dateEnd = now.plusMonths(3)
+                    name = "Task 2 long name",
+                    dateStart = now.minusWeeks(2),
+                    dateEnd = now.plusWeeks(1)
+                ),
+                Task(
+                    name = "Task 3",
+                    dateStart = now.minusMonths(2),
+                    dateEnd = now.plusMonths(2)
+                ),
+                Task(
+                    name = "Task 4",
+                    dateStart = now.minusDays(1),
+                    dateEnd = now.plusDays(1)
                 )
             )
         )

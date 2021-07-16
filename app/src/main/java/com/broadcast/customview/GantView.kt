@@ -1,15 +1,13 @@
 package com.broadcast.customview
 
 import android.content.Context
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.Rect
+import android.graphics.*
 import android.text.TextPaint
 import android.util.AttributeSet
 import android.view.View
 import androidx.core.content.ContextCompat
 import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 import java.time.temporal.IsoFields
 
 class GantView @JvmOverloads constructor(
@@ -20,18 +18,34 @@ class GantView @JvmOverloads constructor(
 
     // region Paint
 
-    // Paint для строк
+    // Для строк
     private val rowPaint = Paint().apply { style = Paint.Style.FILL }
-    // Paint для разделителей
+
+    // Для разделителей
     private val separatorsPaint = Paint().apply {
         strokeWidth = resources.getDimension(R.dimen.gant_separator_width)
         color = ContextCompat.getColor(context, R.color.grey_300)
     }
-    // Paint для названий периодов
+
+    // Для названий периодов
     private val periodNamePaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
         textSize = resources.getDimension(R.dimen.gant_period_name_text_size)
         color = ContextCompat.getColor(context, R.color.grey_500)
     }
+
+    // Для фигур тасок
+    private val taskShapePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+        color = ContextCompat.getColor(context, R.color.blue_600)
+    }
+
+    // Для названий тасок
+    private val taskNamePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textSize = resources.getDimension(R.dimen.gant_task_name_text_size)
+        color = Color.WHITE
+    }
+
+    // Paint для
 
     // endregion
 
@@ -39,8 +53,18 @@ class GantView @JvmOverloads constructor(
 
     // Ширина столбца с периодом
     private val periodWidth = resources.getDimensionPixelSize(R.dimen.gant_period_width)
+
     // Высота строки
     private val rowHeight = resources.getDimensionPixelSize(R.dimen.gant_row_height)
+
+    // Радиус скругления углов таски
+    private val taskCornerRadius = resources.getDimension(R.dimen.gant_task_corner_radius)
+
+    // Вертикальный отступ таски внутри строки
+    private val taskVerticalMargin = resources.getDimension(R.dimen.gant_task_vertical_margin)
+
+    // Горизонтальный отступ текста таски внутри ее фигуры
+    private val taskTextHorizontalMargin = resources.getDimension(R.dimen.gant_task_text_horizontal_margin)
 
     // Чередующиеся цвета строк
     private val rowColors = listOf(
@@ -52,6 +76,9 @@ class GantView @JvmOverloads constructor(
 
     // region Вспомогательные сущности
 
+    private val contentWidth: Int
+        get() = periodWidth * periods.getValue(periodType).size
+
     // Rect для рисования строк
     private val rowRect = Rect()
 
@@ -61,16 +88,21 @@ class GantView @JvmOverloads constructor(
     private val today = LocalDate.now()
     private val startDate = today.minusMonths(MONTH_COUNT)
     private val endDate = today.plusMonths(MONTH_COUNT)
+    private val allDaysCount = ChronoUnit.DAYS.between(startDate, endDate).toFloat()
 
     private var periodType = PeriodType.MONTH
     private val periods = initPeriods()
     // endregion
 
     private var tasks: List<Task> = emptyList()
+    private var uiTasks: List<UiTask> = emptyList()
 
     fun setTasks(tasks: List<Task>) {
         if (tasks != this.tasks) {
             this.tasks = tasks
+            uiTasks = tasks.mapIndexed { index, task ->
+                UiTask(task).apply { updateRect(index) }
+            }
 
             // Сообщаем, что нужно пересчитать размеры
             requestLayout()
@@ -98,8 +130,6 @@ class GantView @JvmOverloads constructor(
             }
         }
 
-        // Ширина всех периодов
-        val contentWidth = periodWidth * periods.size
         val width = calculateSize(measureSpec = widthMeasureSpec, contentSize = contentWidth)
 
         // Высота всех строк с тасками + строки с периодами
@@ -112,20 +142,18 @@ class GantView @JvmOverloads constructor(
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         // Размер изменился, надо пересчитать ширину строки
         rowRect.set(0, 0, w, rowHeight)
+        uiTasks.forEachIndexed { index, uiTask -> uiTask.updateRect(index) }
     }
 
     // endregion
 
     // region Рисование
 
-    override fun onDraw(canvas: Canvas) {
-        super.onDraw(canvas)
-
-        with(canvas) {
-            drawRows()
-            drawSeparators()
-            drawPeriodNames()
-        }
+    override fun onDraw(canvas: Canvas) = with(canvas) {
+        drawRows()
+        drawSeparators()
+        drawPeriodNames()
+        drawTasks()
     }
 
     private fun Canvas.drawRows() {
@@ -153,14 +181,34 @@ class GantView @JvmOverloads constructor(
 
     private fun Canvas.drawPeriodNames() {
         val currentPeriods = periods.getValue(periodType)
-        // По Y текст рисуется относительно baseline, нужно немного магии, чтобы расположить его в центре ячейки
-        val nameY = rowHeight / 2f - (periodNamePaint.descent() + periodNamePaint.baselineShift) / 2
+        val nameY = periodNamePaint.getTextBaselineByCenter(rowHeight / 2f)
         currentPeriods.forEachIndexed { index, periodName ->
             // По X текст рисуется относительно его начала
             val nameX = periodWidth * (index + 0.5f) - periodNamePaint.measureText(periodName) / 2
             drawText(periodName, nameX, nameY, periodNamePaint)
         }
     }
+
+    private fun Canvas.drawTasks() {
+        uiTasks.forEach { uiTask ->
+            // Фигура таски
+            drawRoundRect(uiTask.rect, taskCornerRadius, taskCornerRadius, taskShapePaint)
+            // Расположение названия
+            val textX = uiTask.rect.left + taskTextHorizontalMargin
+            val textY = taskNamePaint.getTextBaselineByCenter(uiTask.rect.centerY())
+            val taskName = uiTask.task.name
+            // Количество символов из названия, которые поместятся в фигуру
+            val charsCount = taskNamePaint.breakText(
+                taskName,
+                true,
+                uiTask.rect.width() - taskTextHorizontalMargin * 2,
+                null
+            )
+            drawText(taskName.substring(startIndex = 0, endIndex = charsCount), textX, textY, taskNamePaint)
+        }
+    }
+
+    private fun Paint.getTextBaselineByCenter(center: Float) = center - (descent() + ascent()) / 2
 
     // endregion
 
@@ -177,9 +225,19 @@ class GantView @JvmOverloads constructor(
         }
     }
 
-    companion object {
-        // Количество месяцев до и после текущей даты
-        private const val MONTH_COUNT = 2L
+    private inner class UiTask(val task: Task) {
+        val rect = RectF()
+
+        fun updateRect(index: Int) {
+            val startPercent = ChronoUnit.DAYS.between(startDate, task.dateStart) / allDaysCount
+            val endPercent = ChronoUnit.DAYS.between(startDate, task.dateEnd) / allDaysCount
+            rect.set(
+                contentWidth * startPercent,
+                rowHeight * (index + 1f) + taskVerticalMargin,
+                contentWidth * endPercent,
+                rowHeight * (index + 2f) - taskVerticalMargin,
+            )
+        }
     }
 
     private enum class PeriodType {
@@ -197,6 +255,11 @@ class GantView @JvmOverloads constructor(
         abstract fun increment(date: LocalDate): LocalDate
 
         abstract fun getDateString(date: LocalDate): String
+    }
+
+    companion object {
+        // Количество месяцев до и после текущей даты
+        private const val MONTH_COUNT = 2L
     }
 }
 

@@ -4,7 +4,11 @@
     <dimen name="gant_period_width">100dp</dimen>
     <dimen name="gant_row_height">48dp</dimen>
     <dimen name="gant_separator_width">1dp</dimen>
+    <dimen name="gant_task_corner_radius">8dp</dimen>
+    <dimen name="gant_task_vertical_margin">4dp</dimen>
+    <dimen name="gant_task_text_horizontal_margin">4dp</dimen>
 
     <dimen name="gant_period_name_text_size">14sp</dimen>
+    <dimen name="gant_task_name_text_size">12sp</dimen>
 
 </resources>
