@@ -34,10 +34,7 @@ class GantView @JvmOverloads constructor(
     }
 
     // Для фигур тасок
-    private val taskShapePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.FILL
-        color = ContextCompat.getColor(context, R.color.blue_600)
-    }
+    private val taskShapePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
 
     // Для названий тасок
     private val taskNamePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -142,7 +139,18 @@ class GantView @JvmOverloads constructor(
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         // Размер изменился, надо пересчитать ширину строки
         rowRect.set(0, 0, w, rowHeight)
+        // И расположение тасок
         uiTasks.forEachIndexed { index, uiTask -> uiTask.updateRect(index) }
+        // И размер градиента
+        taskShapePaint.shader = LinearGradient(
+            0f,
+            0f,
+            w.toFloat(),
+            0f,
+            ContextCompat.getColor(context, R.color.blue_600),
+            Color.WHITE,
+            Shader.TileMode.CLAMP
+        )
     }
 
     // endregion
