@@ -12,6 +12,7 @@
     <color name="grey_100">#F5F5F5</color>
     <color name="grey_300">#E0E0E0</color>
     <color name="grey_500">#9E9E9E</color>
-    <color name="blue_600">#5EA9BE</color>
+    <color name="blue_700">#5594A4</color>
+    <color name="blue_200">#94DCED</color>
     <!--endregion-->
 </resources>
