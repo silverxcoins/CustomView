@@ -85,8 +85,6 @@ class GantView @JvmOverloads constructor(
     // endregion
 
     // region Время
-    private val today = LocalDate.now()
-
     private var periodType = PeriodType.MONTH
     private val periods = initPeriods()
     // endregion
@@ -222,6 +220,7 @@ class GantView @JvmOverloads constructor(
     // endregion
 
     private fun initPeriods(): Map<PeriodType, List<String>> {
+        val today = LocalDate.now()
         // Один раз получаем все названия периодов для каждого из PeriodType
         return PeriodType.values().associateWith { periodType ->
             val startDate = today.minusMonths(MONTH_COUNT)
