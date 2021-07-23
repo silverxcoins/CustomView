@@ -2,7 +2,6 @@ package com.broadcast.customview
 
 import android.content.Context
 import android.graphics.*
-import android.text.TextPaint
 import android.util.AttributeSet
 import android.view.View
 import androidx.core.content.ContextCompat
@@ -27,7 +26,7 @@ class GantView @JvmOverloads constructor(
     }
 
     // Для названий периодов
-    private val periodNamePaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+    private val periodNamePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textSize = resources.getDimension(R.dimen.gant_period_name_text_size)
         color = ContextCompat.getColor(context, R.color.grey_500)
     }
@@ -242,15 +241,19 @@ class GantView @JvmOverloads constructor(
             get() = rect.top < height && (rect.right > 0 || rect.left < rect.width())
 
         fun updateRect(index: Int) {
-            fun getX(date: LocalDate): Float {
+            fun getX(date: LocalDate): Float? {
                 val periodIndex = periods.getValue(periodType).indexOf(periodType.getDateString(date))
-                return periodWidth * (periodIndex + periodType.getPercentOfPeriod(date))
+                return if (periodIndex >= 0) {
+                    periodWidth * (periodIndex + periodType.getPercentOfPeriod(date))
+                } else {
+                    null
+                }
             }
 
             rect.set(
-                getX(task.dateStart),
+                getX(task.dateStart) ?: -taskCornerRadius,
                 rowHeight * (index + 1f) + taskVerticalMargin,
-                getX(task.dateEnd),
+                getX(task.dateEnd) ?: width + taskCornerRadius,
                 rowHeight * (index + 2f) - taskVerticalMargin,
             )
         }
